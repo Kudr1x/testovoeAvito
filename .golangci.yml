@@ -1,0 +1,34 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - revive        # Replacement for golint, highly configurable
+    - gocritic      # Checks for bugs, performance and style issues
+    - gosec         # Security checker
+    - bodyclose     # Checks whether HTTP response body is closed successfully
+    - misspell      # Fixes commonly misspelled English words
+
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+        disabled: false
+        arguments:
+          - "checkPrivateReceivers"
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - unnamedResult

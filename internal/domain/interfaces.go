@@ -9,6 +9,7 @@ type TeamRepository interface {
 
 type UserRepository interface {
 	UpdateUserActivity(ctx context.Context, userID string, isActive bool) (*User, error)
+	GetUser(ctx context.Context, userID string) (*User, error)
 }
 
 type PullRequestRepository interface {

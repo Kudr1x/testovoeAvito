@@ -2,100 +2,60 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-
-	"github.com/golang-migrate/migrate/v4"
-
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-
 	"log"
 	"testovoeAvito/internal/domain"
 	"testovoeAvito/internal/repository/postgres"
-	"time"
+	"testovoeAvito/internal/service"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const (
-	dbURL = "postgres://user:password@localhost:5435/reviewdb?sslmode=disable"
-)
+const dbURL = "postgres://user:password@localhost:5435/reviewdb?sslmode=disable"
 
 func main() {
-	if err := runMigrations(); err != nil {
-		log.Fatalln(err)
+	ctx := context.Background()
+
+	m, _ := migrate.New("file://migrations", dbURL)
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatal(err)
 	}
 
-	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
-	defer pool.Close()
 
 	repo := postgres.NewRepository(pool)
+	svc := service.NewManager(repo)
 
-	team := &domain.Team{
-		Name: "Backend-Go",
+	repo.SaveTeam(ctx, &domain.Team{
+		Name: "GoTeam",
 		Members: []*domain.User{
-			{ID: "u1", Username: "Alice", IsActive: true},
-			{ID: "u2", Username: "Bob", IsActive: true},
-			{ID: "u3", Username: "Charlie", IsActive: false},
+			{ID: "u1", Username: "Alice", IsActive: true, TeamName: "GoTeam"},
+			{ID: "u2", Username: "Bob", IsActive: true, TeamName: "GoTeam"},
+			{ID: "u3", Username: "Charlie", IsActive: true, TeamName: "GoTeam"},
+			{ID: "u4", Username: "Dave", IsActive: true, TeamName: "GoTeam"},
 		},
-	}
+	})
 
-	err = repo.SaveTeam(ctx, team)
+	pr, err := svc.CreatePR(ctx, "pr-final", "Fix stuff", "u1")
 	if err != nil {
-		log.Println(err)
-	} else {
-		log.Println("Team saved")
+		log.Fatal(err)
 	}
+	fmt.Printf("OK. Reviewers: %v\n", pr.Reviewers)
 
-	savedTeam, err := repo.GetTeamByName(ctx, "Backend-Go")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	printJSON(savedTeam)
+	if len(pr.Reviewers) > 0 {
+		oldRev := pr.Reviewers[0]
+		fmt.Printf("2. Reassigning %s... ", oldRev)
 
-	pr := &domain.PullRequest{
-		ID:        "pr-1",
-		Name:      "Fix login bug",
-		AuthorID:  "u1",
-		Status:    domain.PRStatusOpen,
-		Reviewers: []string{"u2"},
-		CreatedAt: time.Now(),
+		_, newRev, err := svc.ReassignReviewer(ctx, pr.ID, oldRev)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("OK. New reviewer: %s\n", newRev)
 	}
-
-	err = repo.SavePR(ctx, pr)
-	if err != nil {
-		log.Println(err)
-	} else {
-		log.Println("ok")
-	}
-
-	savedPR, err := repo.GetPR(ctx, "pr-1")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	printJSON(savedPR)
-}
-
-func runMigrations() error {
-	m, err := migrate.New(
-		"file://migrations",
-		dbURL,
-	)
-	if err != nil {
-		return err
-	}
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		return err
-	}
-	return nil
-}
-
-func printJSON(v interface{}) {
-	b, _ := json.MarshalIndent(v, "", "  ")
-	fmt.Println(string(b))
 }

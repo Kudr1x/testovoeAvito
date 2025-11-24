@@ -19,3 +19,16 @@ func (r *Repository) UpdateUserActivity(ctx context.Context, userID string, isAc
 	}
 	return &u, nil
 }
+
+func (r *Repository) GetUser(ctx context.Context, userID string) (*domain.User, error) {
+	u := &domain.User{}
+	err := r.pool.QueryRow(ctx, `
+        SELECT id, username, team_name, is_active 
+        FROM users WHERE id = $1
+    `, userID).Scan(&u.ID, &u.Username, &u.TeamName, &u.IsActive)
+
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return u, nil
+}

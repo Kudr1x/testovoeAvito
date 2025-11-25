@@ -1,4 +1,15 @@
 services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_URL=postgres://user:password@db:5432/reviewdb?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
   db:
     image: postgres:15-alpine
     environment:

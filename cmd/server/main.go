@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"testovoeAvito/internal/handler"
 	"testovoeAvito/internal/repository/postgres"
 	"testovoeAvito/internal/service"
@@ -15,10 +16,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const dbURL = "postgres://user:password@localhost:5435/reviewdb?sslmode=disable"
 const serverPort = ":8080"
 
 func main() {
+	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		dbURL = "postgres://user:password@localhost:5435/reviewdb?sslmode=disable"
+	}
+
 	m, err := migrate.New("file://migrations", dbURL)
 	if err != nil {
 		log.Fatalf("Migration init failed: %v", err)

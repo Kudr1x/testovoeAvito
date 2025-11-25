@@ -47,6 +47,10 @@ func (h *Handler) InitRoutes() http.Handler {
 		r.Post("/reassign", h.reassignReviewer)
 	})
 
+	r.Route("/stats", func(r chi.Router) {
+		r.Get("/", h.getStatistics)
+	})
+
 	return r
 }
 

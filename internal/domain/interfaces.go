@@ -22,6 +22,7 @@ type Repository interface {
 	TeamRepository
 	UserRepository
 	PullRequestRepository
+	StatsRepository
 }
 
 type TeamService interface {
@@ -44,4 +45,13 @@ type Service interface {
 	TeamService
 	UserService
 	PullRequestService
+	StatsService
+}
+
+type StatsRepository interface {
+	GetGlobalStats(ctx context.Context) (*Stats, error)
+}
+
+type StatsService interface {
+	GetStatistics(ctx context.Context) (*Stats, error)
 }
